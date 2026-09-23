@@ -24,6 +24,7 @@ var untracedExact = []string{
 	"/robots.txt",
 	"/health",
 	"/healthz",
+	"/readyz",
 	"/_ah/health",
 }
 
