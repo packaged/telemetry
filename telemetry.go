@@ -113,6 +113,8 @@ func Init(ctx context.Context, opts ...Option) (Shutdown, error) {
 	if o.endpoint == "" {
 		return noopShutdown, nil
 	}
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(error) {}))
+
 	// The exporters read OTEL_EXPORTER_OTLP_ENDPOINT themselves; setting it
 	// keeps WithEndpoint and the environment on one code path, and is what
 	// makes Enabled truthful after a WithEndpoint-only Init.
