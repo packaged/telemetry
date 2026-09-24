@@ -14,6 +14,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -124,6 +125,7 @@ func Init(ctx context.Context, opts ...Option) (Shutdown, error) {
 		resource.Default().SchemaURL(),
 		append([]attribute.KeyValue{
 			attribute.String("service.name", serviceName),
+			attribute.String("service.instance.id", serviceInstanceID(resource.Default())),
 			attribute.String("service.version", o.version),
 			attribute.String("deployment.environment", o.env),
 		}, o.attrs...)...,
@@ -227,4 +229,18 @@ func envOr(key, def string) string {
 		return v
 	}
 	return def
+}
+
+// serviceInstanceID tells this process apart from the service's other replicas:
+// the id OTEL_RESOURCE_ATTRIBUTES sets, else the host name (the pod name in
+// Kubernetes), else a random id. Metric backends such as Managed Prometheus key
+// series on it, so replicas sharing one overwrite each other's points.
+func serviceInstanceID(detected *resource.Resource) string {
+	if v, ok := detected.Set().Value("service.instance.id"); ok && v.AsString() != "" {
+		return v.AsString()
+	}
+	if host, err := os.Hostname(); err == nil && host != "" {
+		return host
+	}
+	return uuid.NewString()
 }
